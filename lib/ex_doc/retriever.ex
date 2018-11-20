@@ -86,25 +86,21 @@ defmodule ExDoc.Retriever do
               "For earlier Elixir versions, make sure to depend on {:ex_doc, \"~> 0.18.0\"}"
     end
 
-    if function_exported?(module, :__info__, 1) do
-      case Code.fetch_docs(module) do
-        {:docs_v1, _, _, _, :hidden, _, _} ->
-          false
+    case Code.fetch_docs(module) do
+      {:docs_v1, _, _, _, :hidden, _, _} ->
+        false
 
-        {:docs_v1, _, _, _, _, _, _} = docs ->
-          docs
+      {:docs_v1, _, _, _, _, _, _} = docs ->
+        docs
 
-        {:error, reason} ->
-          raise Error,
-                "module #{inspect(module)} was not compiled with flag --docs: #{inspect(reason)}"
+      {:error, reason} ->
+        raise Error,
+              "module #{inspect(module)} was not compiled with flag --docs: #{inspect(reason)}"
 
-        _ ->
-          raise Error,
-                "unknown format in Docs chunk. This likely means you are running on " <>
-                  "a more recent Elixir version that is not supported by ExDoc. Please update."
-      end
-    else
-      false
+      _ ->
+        raise Error,
+              "unknown format in Docs chunk. This likely means you are running on " <>
+                "a more recent Elixir version that is not supported by ExDoc. Please update."
     end
   end
 
@@ -533,7 +529,12 @@ defmodule ExDoc.Retriever do
   end
 
   defp source_path(module, config) do
-    source = String.Chars.to_string(module.__info__(:compile)[:source])
+    source = if function_exported?(module, :__info__, 1) do
+      module.__info__(:compile)[:source]
+    else
+      module.module_info(:compile)[:source]
+    end
+    source = String.Chars.to_string(source)
 
     if root = config.source_root do
       Path.relative_to(source, root)
